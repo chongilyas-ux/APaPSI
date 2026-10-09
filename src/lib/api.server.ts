@@ -99,13 +99,17 @@ export async function activeVersion(db: DB) {
 }
 
 export async function studentList(db: DB) {
+  // Resolve the active rubric first: on an empty database this creates version 1,
+  // so `current` below is never undefined when calculate() reads config.meetings.
+  const active = await activeVersion(db);
   const [students, assessments, versions] = await Promise.all([
     db.from("students").select("*").eq("active", true).order("rombel_id").order("npm"),
     db.from("assessments").select("*"),
     db.from("assessment_versions").select("id,config,state"),
   ]);
   const versionMap = new Map(must(versions).map((v) => [v.id, v.config as unknown as Configuration]));
-  const current = must(versions).find((v) => v.state === "active")?.config as unknown as Configuration;
+  versionMap.set(active.id, active.config as unknown as Configuration);
+  const current = active.config as unknown as Configuration;
   const byStudent = new Map(must(assessments).map((a) => [a.student_id, a]));
   return must(students).map((row) => {
     const a = byStudent.get(row.id);
