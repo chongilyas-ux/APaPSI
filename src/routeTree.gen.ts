@@ -18,7 +18,9 @@ import { Route as AuthenticatedNilaiAkhirRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPengaturanRouteImport } from './routes/_authenticated/pengaturan'
 import { Route as AuthenticatedRubrikRouteImport } from './routes/_authenticated/rubrik'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as AuthenticatedCpmk2IndexRouteImport } from './routes/_authenticated/cpmk2.index'
 import { Route as AuthenticatedPenilaianIndexRouteImport } from './routes/_authenticated/penilaian.index'
+import { Route as AuthenticatedCpmk2RombelNpmRouteImport } from './routes/_authenticated/cpmk2.$rombel.$npm'
 import { Route as AuthenticatedPenilaianRombelNpmRouteImport } from './routes/_authenticated/penilaian.$rombel.$npm'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,10 +67,21 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedCpmk2IndexRoute = AuthenticatedCpmk2IndexRouteImport.update({
+  id: '/cpmk2/',
+  path: '/cpmk2/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPenilaianIndexRoute =
   AuthenticatedPenilaianIndexRouteImport.update({
     id: '/penilaian/',
     path: '/penilaian/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCpmk2RombelNpmRoute =
+  AuthenticatedCpmk2RombelNpmRouteImport.update({
+    id: '/cpmk2/$rombel/$npm',
+    path: '/cpmk2/$rombel/$npm',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPenilaianRombelNpmRoute =
@@ -87,7 +100,9 @@ export interface FileRoutesByFullPath {
   '/pengaturan': typeof AuthenticatedPengaturanRoute
   '/rubrik': typeof AuthenticatedRubrikRoute
   '/api/$': typeof ApiSplatRoute
+  '/cpmk2/': typeof AuthenticatedCpmk2IndexRoute
   '/penilaian/': typeof AuthenticatedPenilaianIndexRoute
+  '/cpmk2/$rombel/$npm': typeof AuthenticatedCpmk2RombelNpmRoute
   '/penilaian/$rombel/$npm': typeof AuthenticatedPenilaianRombelNpmRoute
 }
 export interface FileRoutesByTo {
@@ -99,7 +114,9 @@ export interface FileRoutesByTo {
   '/pengaturan': typeof AuthenticatedPengaturanRoute
   '/rubrik': typeof AuthenticatedRubrikRoute
   '/api/$': typeof ApiSplatRoute
+  '/cpmk2': typeof AuthenticatedCpmk2IndexRoute
   '/penilaian': typeof AuthenticatedPenilaianIndexRoute
+  '/cpmk2/$rombel/$npm': typeof AuthenticatedCpmk2RombelNpmRoute
   '/penilaian/$rombel/$npm': typeof AuthenticatedPenilaianRombelNpmRoute
 }
 export interface FileRoutesById {
@@ -113,7 +130,9 @@ export interface FileRoutesById {
   '/_authenticated/pengaturan': typeof AuthenticatedPengaturanRoute
   '/_authenticated/rubrik': typeof AuthenticatedRubrikRoute
   '/api/$': typeof ApiSplatRoute
+  '/_authenticated/cpmk2/': typeof AuthenticatedCpmk2IndexRoute
   '/_authenticated/penilaian/': typeof AuthenticatedPenilaianIndexRoute
+  '/_authenticated/cpmk2/$rombel/$npm': typeof AuthenticatedCpmk2RombelNpmRoute
   '/_authenticated/penilaian/$rombel/$npm': typeof AuthenticatedPenilaianRombelNpmRoute
 }
 export interface FileRouteTypes {
@@ -127,7 +146,9 @@ export interface FileRouteTypes {
     | '/pengaturan'
     | '/rubrik'
     | '/api/$'
+    | '/cpmk2/'
     | '/penilaian/'
+    | '/cpmk2/$rombel/$npm'
     | '/penilaian/$rombel/$npm'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -139,7 +160,9 @@ export interface FileRouteTypes {
     | '/pengaturan'
     | '/rubrik'
     | '/api/$'
+    | '/cpmk2'
     | '/penilaian'
+    | '/cpmk2/$rombel/$npm'
     | '/penilaian/$rombel/$npm'
   id:
     | '__root__'
@@ -152,7 +175,9 @@ export interface FileRouteTypes {
     | '/_authenticated/pengaturan'
     | '/_authenticated/rubrik'
     | '/api/$'
+    | '/_authenticated/cpmk2/'
     | '/_authenticated/penilaian/'
+    | '/_authenticated/cpmk2/$rombel/$npm'
     | '/_authenticated/penilaian/$rombel/$npm'
   fileRoutesById: FileRoutesById
 }
@@ -228,11 +253,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/cpmk2/': {
+      id: '/_authenticated/cpmk2/'
+      path: '/cpmk2'
+      fullPath: '/cpmk2/'
+      preLoaderRoute: typeof AuthenticatedCpmk2IndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/penilaian/': {
       id: '/_authenticated/penilaian/'
       path: '/penilaian'
       fullPath: '/penilaian/'
       preLoaderRoute: typeof AuthenticatedPenilaianIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cpmk2/$rombel/$npm': {
+      id: '/_authenticated/cpmk2/$rombel/$npm'
+      path: '/cpmk2/$rombel/$npm'
+      fullPath: '/cpmk2/$rombel/$npm'
+      preLoaderRoute: typeof AuthenticatedCpmk2RombelNpmRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/penilaian/$rombel/$npm': {
@@ -251,7 +290,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNilaiAkhirRoute: typeof AuthenticatedNilaiAkhirRoute
   AuthenticatedPengaturanRoute: typeof AuthenticatedPengaturanRoute
   AuthenticatedRubrikRoute: typeof AuthenticatedRubrikRoute
+  AuthenticatedCpmk2IndexRoute: typeof AuthenticatedCpmk2IndexRoute
   AuthenticatedPenilaianIndexRoute: typeof AuthenticatedPenilaianIndexRoute
+  AuthenticatedCpmk2RombelNpmRoute: typeof AuthenticatedCpmk2RombelNpmRoute
   AuthenticatedPenilaianRombelNpmRoute: typeof AuthenticatedPenilaianRombelNpmRoute
 }
 
@@ -261,7 +302,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNilaiAkhirRoute: AuthenticatedNilaiAkhirRoute,
   AuthenticatedPengaturanRoute: AuthenticatedPengaturanRoute,
   AuthenticatedRubrikRoute: AuthenticatedRubrikRoute,
+  AuthenticatedCpmk2IndexRoute: AuthenticatedCpmk2IndexRoute,
   AuthenticatedPenilaianIndexRoute: AuthenticatedPenilaianIndexRoute,
+  AuthenticatedCpmk2RombelNpmRoute: AuthenticatedCpmk2RombelNpmRoute,
   AuthenticatedPenilaianRombelNpmRoute: AuthenticatedPenilaianRombelNpmRoute,
 }
 

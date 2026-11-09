@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock3,
+  Database,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -33,7 +34,8 @@ import { AIEntry } from "./AIWorkspace";
 const navigation = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/mahasiswa", label: "Mahasiswa", icon: UsersRound },
-  { to: "/penilaian", label: "Penilaian", icon: ClipboardCheck },
+  { to: "/penilaian", label: "Penilaian · Tahap I", icon: ClipboardCheck },
+  { to: "/cpmk2", label: "Penilaian CPMK 2", icon: Database },
   { to: "/nilai-akhir", label: "Nilai Akhir", icon: Table2 },
   { to: "/rubrik", label: "Rubrik Penilaian", icon: BookOpen },
   { to: "/pengaturan", label: "Pengaturan", icon: Settings2 },

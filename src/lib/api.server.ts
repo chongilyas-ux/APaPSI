@@ -501,6 +501,14 @@ export async function handleApi(request: Request, path: string, aiHandler?: AiHa
       if (!aiHandler) throw new HttpError("Endpoint tidak ditemukan.", 404);
       return await aiHandler(ctx, method, path, url);
     }
+    // CPMK 2: tabel & rute terpisah; CPMK 1 tidak tersentuh.
+    const cpmk2 = await import("./cpmk2/server");
+    if (path.startsWith("/cpmk2/")) {
+      const raw = await request.text();
+      const body = raw && raw.length <= 1024 * 1024 ? JSON.parse(raw) : {};
+      const handled = await cpmk2.handleCpmk2(ctx, method, path, body, url);
+      if (handled) return handled;
+    }
     if (path === "/students" && method === "GET") return json(await studentList(ctx.db));
     if (path === "/students" && method === "POST") return json(await createStudent(ctx, await body()), 201);
     if (path === "/dashboard" && method === "GET") {
