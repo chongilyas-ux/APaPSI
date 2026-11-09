@@ -77,7 +77,7 @@ export default function Cpmk2Students() {
       <Card className="mb-4 flex flex-wrap items-center gap-3 p-4">
         <div className="flex gap-1 rounded-lg border border-border bg-white p-1">
           <button
-            onClick={() => setParams({ rombel: "all", q: query })}
+            onClick={() => setParams(new URLSearchParams({ rombel: "all", q: query }))}
             className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${
               rombel === "all" ? "bg-primary text-white" : "text-slate-500 hover:bg-slate-50"
             }`}
@@ -87,7 +87,7 @@ export default function Cpmk2Students() {
           {rombels.map((r) => (
             <button
               key={r}
-              onClick={() => setParams({ rombel: String(r), q: query })}
+              onClick={() => setParams(new URLSearchParams({ rombel: String(r), q: query }))}
               className={`rounded-md px-3 py-2 text-[11px] font-medium transition ${
                 rombel === String(r) ? "bg-primary text-white" : "text-slate-500 hover:bg-slate-50"
               }`}
