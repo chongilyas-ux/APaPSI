@@ -49,10 +49,13 @@ type ImportPreview = {
 };
 export default function Students({
   mode = "students",
+  data,
 }: {
   mode?: "students" | "assessment" | "final";
+  /** Data mahasiswa dari luar (mis. halaman Nilai Akhir); kosongkan untuk memakai loader rute. */
+  data?: Student[];
 }) {
-  const students = useLoaderData() as Student[];
+  const students = data ?? (useLoaderData() as Student[]);
   const revalidator = useRevalidator();
   const [params, setParams] = useSearchParams();
   const rombel = Number(params.get("rombel") ?? (params.get("q") ? 0 : 1));
