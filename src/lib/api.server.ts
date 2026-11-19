@@ -521,15 +521,80 @@ async function publicStudentGrade(url: URL): Promise<Response> {
     found: true,
     student: { npm: student.npm, name: student.name, rombel_id: student.rombel_id },
     tugas1: {
-      label: "Tugas 1 — Tahap I (CPMK 1)",
+      label: "Tugas 1 - Tahap I (CPMK 1)",
       state: a1row?.state ?? "belum dinilai",
       result: c1Result,
     },
     tugas2: {
-      label: "Tugas 2 — Tahap II / CPMK 2",
+      label: "Tugas 2 - Tahap II / CPMK 2",
       state: a2row?.state ?? "belum dinilai",
       result: c2Result,
       slots: c2Slots,
+    },
+    tugas3: { label: "Tugas 3", available: false, message: "Belum tersedia (rubrik belum ada)." },
+  });
+}
+
+async function publicStudentProgress(url: URL): Promise<Response> {
+  const npm = (url.searchParams.get("npm") ?? "").trim();
+  if (!/^\d{10}$/.test(npm)) return json({ found: false, message: "NPM harus 10 digit angka." }, 400);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: student, error: sErr } = await supabaseAdmin
+    .from("students")
+    .select("id,npm,name,rombel_id,active")
+    .eq("npm", npm)
+    .eq("active", true)
+    .maybeSingle();
+  if (sErr || !student) return json({ found: false, message: "NPM tidak ditemukan." }, 404);
+
+  const [activeVer, a1, a2, versions] = await Promise.all([
+    supabaseAdmin.from("assessment_versions").select("id,config").eq("state", "active").maybeSingle(),
+    supabaseAdmin.from("assessments").select("data,state,version_id").eq("student_id", student.id).maybeSingle(),
+    supabaseAdmin.from("assessments_cpmk2").select("data,state").eq("student_id", student.id).maybeSingle(),
+    supabaseAdmin.from("assessment_versions").select("id,config"),
+  ]);
+  const versionMap = new Map((versions.data ?? []).map((v: any) => [v.id, v.config as Configuration]));
+  const activeConfig = (activeVer.data?.config as Configuration | undefined) ?? initialConfig;
+
+  // Tugas 1 (CPMK 1) — hanya komponen B dan C (penilaian substansi & tata tulis)
+  const a1row = a1.data as any;
+  const c1Config = (a1row && versionMap.get(a1row.version_id)) ?? activeConfig;
+  const c1Data = (a1row?.data as AssessmentData | undefined) ?? emptyData();
+  const c1Components = c1Config.aspects
+    .filter((a) => a.active && a.kind === "criterion")
+    .map((a) => {
+      const sc = c1Data.scores[a.code] as { score?: number | null; level?: string; note?: string } | undefined;
+      return { code: a.code, name: a.name, group: a.group, assessed: sc?.score != null, level: sc?.level || "", note: sc?.note || "" };
+    });
+
+  // Tugas 2 (CPMK 2) — hanya komponen B dan C
+  const a2row = a2.data as any;
+  const c2Data = (a2row?.data as Cpmk2Data | undefined) ?? emptyCpmk2Data();
+  const c2Names: Record<string, { name: string; group: string }> = {
+    B1: { name: "Tinjauan pustaka basis data", group: "Substansi" },
+    B2: { name: "Merancang tabel basis data dari hasil ERD", group: "Substansi" },
+    B3: { name: "Normalisasi basis data", group: "Substansi" },
+    B4: { name: "Pembuatan relasi antar tabel", group: "Substansi" },
+    B5: { name: "Pengisian data ke basis data", group: "Substansi" },
+    C: { name: "Tata tulis dan format", group: "Tata Tulis" },
+  };
+  const c2Components = (["B1", "B2", "B3", "B4", "B5", "C"] as const).map((code) => {
+    const sc = c2Data.b?.[code] as { score?: number | null; level?: string; note?: string } | undefined;
+    return { code, name: c2Names[code].name, group: c2Names[code].group, assessed: sc?.score != null, level: sc?.level || "", note: sc?.note || "" };
+  });
+
+  return json({
+    found: true,
+    student: { npm: student.npm, name: student.name, rombel_id: student.rombel_id },
+    tugas1: {
+      label: "Tugas 1 - Tahap I (CPMK 1)",
+      state: a1row?.state ?? "belum dinilai",
+      components: c1Components,
+    },
+    tugas2: {
+      label: "Tugas 2 - Tahap II / CPMK 2",
+      state: a2row?.state ?? "belum dinilai",
+      components: c2Components,
     },
     tugas3: { label: "Tugas 3", available: false, message: "Belum tersedia (rubrik belum ada)." },
   });
@@ -542,6 +607,7 @@ export async function handleApi(request: Request, path: string, aiHandler?: AiHa
     if (path === "/health") return json({ status: "ok" });
     if (path === "/auth/bootstrap" && method === "POST") return await bootstrap(request);
     if (path === "/public/student-grade" && method === "GET") return await publicStudentGrade(url);
+    if (path === "/public/student-progress" && method === "GET") return await publicStudentProgress(url);
     const ctx = await authenticate(request);
     const body = async () => {
       const raw = await request.text();

@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as CekKekuranganRouteImport } from './routes/cek-kekurangan'
+import { Route as CekNilaiRouteImport } from './routes/cek-nilai'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMahasiswaRouteImport } from './routes/_authenticated/mahasiswa'
@@ -30,6 +32,16 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CekKekuranganRoute = CekKekuranganRouteImport.update({
+  id: '/cek-kekurangan',
+  path: '/cek-kekurangan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CekNilaiRoute = CekNilaiRouteImport.update({
+  id: '/cek-nilai',
+  path: '/cek-nilai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -93,6 +105,8 @@ const AuthenticatedPenilaianRombelNpmRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cek-kekurangan': typeof CekKekuranganRoute
+  '/cek-nilai': typeof CekNilaiRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/mahasiswa': typeof AuthenticatedMahasiswaRoute
@@ -107,6 +121,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cek-kekurangan': typeof CekKekuranganRoute
+  '/cek-nilai': typeof CekNilaiRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/mahasiswa': typeof AuthenticatedMahasiswaRoute
@@ -123,6 +139,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/cek-kekurangan': typeof CekKekuranganRoute
+  '/cek-nilai': typeof CekNilaiRoute
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/mahasiswa': typeof AuthenticatedMahasiswaRoute
@@ -139,6 +157,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/cek-kekurangan'
+    | '/cek-nilai'
     | '/login'
     | '/dashboard'
     | '/mahasiswa'
@@ -153,6 +173,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cek-kekurangan'
+    | '/cek-nilai'
     | '/login'
     | '/dashboard'
     | '/mahasiswa'
@@ -168,6 +190,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/cek-kekurangan'
+    | '/cek-nilai'
     | '/login'
     | '/_authenticated/dashboard'
     | '/_authenticated/mahasiswa'
@@ -184,6 +208,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  CekKekuranganRoute: typeof CekKekuranganRoute
+  CekNilaiRoute: typeof CekNilaiRoute
   LoginRoute: typeof LoginRoute
   ApiSplatRoute: typeof ApiSplatRoute
 }
@@ -202,6 +228,20 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cek-kekurangan': {
+      id: '/cek-kekurangan'
+      path: '/cek-kekurangan'
+      fullPath: '/cek-kekurangan'
+      preLoaderRoute: typeof CekKekuranganRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cek-nilai': {
+      id: '/cek-nilai'
+      path: '/cek-nilai'
+      fullPath: '/cek-nilai'
+      preLoaderRoute: typeof CekNilaiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -314,6 +354,8 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  CekKekuranganRoute: CekKekuranganRoute,
+  CekNilaiRoute: CekNilaiRoute,
   LoginRoute: LoginRoute,
   ApiSplatRoute: ApiSplatRoute,
 }
