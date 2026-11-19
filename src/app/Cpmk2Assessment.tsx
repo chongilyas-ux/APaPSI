@@ -15,7 +15,10 @@ import {
   formatScore2,
   validateCpmk2,
   deductionByCode,
+  slotsForWeek,
+  getSlotEntry,
   type Cpmk2Data,
+  type Cpmk2Slot,
   type ViolationCode,
 } from "@/lib/cpmk2/domain";
 import type { Cpmk2Student } from "@/lib/cpmk2/server";
@@ -193,13 +196,12 @@ export default function Cpmk2Assessment() {
             ))}
           </div>
           <div className="space-y-5">
-            {tab === "Administrasi" && (
+                        {tab === "Administrasi" && (
               <Card className="overflow-hidden">
                 <div className="border-b border-border p-5">
                   <h3 className="text-sm font-semibold">Administrasi pengumpulan</h3>
                   <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                    Tiga minggu pengumpulan (6, 7, 9). Setiap status bermasalah mengurangi 2 poin.
-                    "Tidak mengumpulkan" dihitung pada A1 dan A2 sekaligus.
+                    5 slot pengumpulan: Minggu 6 &amp; 7 masing-masing <strong>di lab</strong> (deadline selesai jam praktikum) dan <strong>tugas di rumah</strong> (deadline minggu depannya); Minggu 9 <strong>hanya di lab</strong>. Setiap status bermasalah mengurangi 2 poin. &quot;Tidak mengumpulkan&quot; dihitung pada A1 dan A2 sekaligus.
                   </p>
                   <div className="mt-4 flex gap-3">
                     {(["A1", "A2"] as const).map((code) => (
@@ -215,73 +217,72 @@ export default function Cpmk2Assessment() {
                   <table className="w-full min-w-[530px] text-left">
                     <thead>
                       <tr className="border-b border-border bg-slate-50 text-[10px] text-slate-500">
-                        <th className="px-5 py-3 font-medium">Minggu</th>
-                        <th className="px-3 py-3 font-medium">A1 · Waktu</th>
-                        <th className="px-3 py-3 font-medium">A2 · Isi</th>
+                        <th className="px-5 py-3 font-medium">Minggu / slot</th>
+                        <th className="px-3 py-3 font-medium">A1 — Waktu</th>
+                        <th className="px-3 py-3 font-medium">A2 — Isi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {CPMK2_WEEKS.map((week) => {
-                        const entry = data.a[week] ?? { time: "", content: "" };
-                        return (
-                          <tr key={week}>
-                            <td className="px-5 py-3">
-                              <p className="text-[11px] font-medium">Minggu {week}</p>
-                              <p className="mt-0.5 text-[10px] text-slate-400">{WEEK_NAMES[week]?.split(" · ")[1]}</p>
-                            </td>
-                            <td className="px-3 py-3">
-                              <select
-                                aria-label={`Minggu ${week} waktu`}
-                                value={entry.time}
-                                onChange={(e) =>
-                                  setData({
-                                    ...data,
-                                    a: {
-                                      ...data.a,
-                                      [week]: {
-                                        ...(e.target.value === "missing" ? { time: "missing", content: "missing" } : { ...entry, time: e.target.value, ...(entry.content === "missing" ? { content: "" } : {}) }),
-                                      },
-                                    },
-                                  })
-                                }
-                                className={`${inputClass} min-w-36 text-[11px]`}
-                              >
-                                {TIME_OPTIONS.map(([value, label]) => (
-                                  <option key={value} value={value}>{label}</option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="px-3 py-3">
-                              <select
-                                aria-label={`Minggu ${week} isi`}
-                                value={entry.content}
-                                onChange={(e) =>
-                                  setData({
-                                    ...data,
-                                    a: {
-                                      ...data.a,
-                                      [week]: {
-                                        ...(e.target.value === "missing" ? { time: "missing", content: "missing" } : { ...entry, content: e.target.value, ...(entry.time === "missing" ? { time: "" } : {}) }),
-                                      },
-                                    },
-                                  })
-                                }
-                                className={`${inputClass} min-w-36 text-[11px]`}
-                              >
-                                {CONTENT_OPTIONS.map(([value, label]) => (
-                                  <option key={value} value={value}>{label}</option>
-                                ))}
-                              </select>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {CPMK2_WEEKS.flatMap((week) =>
+                        slotsForWeek(week).map((slot) => {
+                          const entry = getSlotEntry(data, week, slot as Cpmk2Slot);
+                          const setSlot = (next: { time: string; content: string }) =>
+                            setData({
+                              ...data,
+                              a: {
+                                ...data.a,
+                                [week]: { ...(data.a[week] ?? {}), [slot]: next },
+                              },
+                            });
+                          const slotLabel = slot === "lab" ? "Di lab" : "Tugas di rumah";
+                          const slotHint = slot === "lab" ? "deadline selesai jam praktikum" : "deadline minggu depan";
+                          return (
+                            <tr key={`${week}-${slot}`}>
+                              <td className="px-5 py-3">
+                                <p className="text-[11px] font-medium">Minggu {week}</p>
+                                <p className="mt-0.5 text-[10px] text-slate-400">{slotLabel} · {slotHint}</p>
+                              </td>
+                              <td className="px-3 py-3">
+                                <select
+                                  aria-label={`Minggu ${week} ${slotLabel} waktu`}
+                                  value={entry.time}
+                                  onChange={(e) => {
+                                    const v = e.target.value as any;
+                                    setSlot(v === "missing" ? { time: "missing", content: "missing" } : { ...entry, time: v, ...(entry.content === "missing" ? { content: "" } : {}) });
+                                  }}
+                                  className={`${inputClass} min-w-36 text-[11px]`}
+                                >
+                                  {TIME_OPTIONS.map(([value, label]) => (
+                                    <option key={value} value={value}>{label}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-3 py-3">
+                                <select
+                                  aria-label={`Minggu ${week} ${slotLabel} isi`}
+                                  value={entry.content}
+                                  onChange={(e) => {
+                                    const v = e.target.value as any;
+                                    setSlot(v === "missing" ? { time: "missing", content: "missing" } : { ...entry, content: v, ...(entry.time === "missing" ? { time: "" } : {}) });
+                                  }}
+                                  className={`${inputClass} min-w-36 text-[11px]`}
+                                >
+                                  {CONTENT_OPTIONS.map(([value, label]) => (
+                                    <option key={value} value={value}>{label}</option>
+                                  ))}
+                                </select>
+                              </td>
+                            </tr>
+                          );
+                        }),
+                      )}
                     </tbody>
                   </table>
                 </div>
               </Card>
             )}
-            {(tab === "Substansi" || tab === "Tata Tulis") &&
+
+{(tab === "Substansi" || tab === "Tata Tulis") &&
               bAspects
                 .filter((aspect) => (tab === "Substansi" ? aspect.group === "Substansi" : aspect.code === "C"))
                 .map((aspect) => {

@@ -6,6 +6,17 @@
 export const CPMK2_WEEKS = ["6", "7", "9"] as const;
 export type Cpmk2Week = (typeof CPMK2_WEEKS)[number];
 
+export const CPMK2_SLOTS = ["lab", "rumah"] as const;
+export type Cpmk2Slot = (typeof CPMK2_SLOTS)[number];
+
+/** Slot per minggu: minggu 9 hanya di lab (tidak ada tugas rumah), total 5 slot. */
+export function slotsForWeek(week: string): Cpmk2Slot[] {
+  return week === "9" ? ["lab"] : ["lab", "rumah"];
+}
+export function allCpmk2Slots(): Array<{ week: Cpmk2Week; slot: Cpmk2Slot }> {
+  return CPMK2_WEEKS.flatMap((week) => slotsForWeek(week).map((slot) => ({ week, slot })));
+}
+
 export type TimeStatus = "" | "on-time" | "late" | "missing";
 export type ContentStatus = "" | "suitable" | "lacking" | "unreadable" | "missing";
 export type AttendanceStatus = "" | "hadir" | "izin" | "alpa";
@@ -14,12 +25,15 @@ export type ViolationCode = "P1" | "P2" | "P3" | "P4" | "P5" | "P6" | "P7" | "P8
 export type Criterion = { level: string; min: number; max: number; description: string };
 export type Violation = { code: ViolationCode; name: string; penalty: number };
 
+export type SlotEntry = { time: TimeStatus; content: ContentStatus };
+export type WeekEntry = { lab?: SlotEntry; rumah?: SlotEntry };
+
 export type Cpmk2Data = {
-  /** Catatan mingguan A: key = "6" | "7" | "9". */
-  a: Record<string, { time: TimeStatus; content: ContentStatus }>;
-  /** Skor rubrik B1–B5 + C: { level, score, note }. */
+  /** Pengumpulan per minggu & slot: a[minggu][slot] = {time, content}. Minggu 9 hanya slot lab. */
+  a: Record<string, WeekEntry>;
+  /** Skor rubrik B1-B5 + C: { level, score, note }. */
   b: Record<string, { level: string; score: number | null; note: string }>;
-  /** Kesungguhan per minggu: status hadir/izin/alpa + skor 0–10 saat hadir. */
+  /** Kesungguhan per minggu: status hadir/izin/alpa + skor 0-10 saat hadir. */
   d1: Record<string, { status: AttendanceStatus; score: number | null }>;
   /** Catatan pelanggaran satu-per-satu: pengulangan tercatat sebagai entri baru. */
   d2: Array<{ week: string; code: ViolationCode; note: string }>;
@@ -232,14 +246,29 @@ function round2(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-/** A1 = max(0, 10 − 2 × keterlambatan). "Tidak mengumpulkan" = 1 terlambat. */
+function isSlotEntry(value: unknown): value is SlotEntry {
+  return !!value && typeof value === "object" && "time" in (value as any) && "content" in (value as any);
+}
+
+export function getSlotEntry(data: Cpmk2Data, week: string, slot: Cpmk2Slot): SlotEntry {
+  const w = data.a[week] as any;
+  if (!w) return { time: "", content: "" };
+  // format lama (sebelum pemisahan lab/rumah): {time,content} per minggu
+  if (isSlotEntry(w) && !("lab" in w) && !("rumah" in w)) {
+    return slot === "lab" ? (w as SlotEntry) : { time: "", content: "" };
+  }
+  const e = w[slot];
+  return isSlotEntry(e) ? e : { time: "", content: "" };
+}
+
+/** A1/A2: max(0, 10 - 2 x slot bermasalah). 5 slot (M6 lab/rumah, M7 lab/rumah, M9 lab). */
 export function calcA1Records(data: Cpmk2Data): { late: number; kurang: number; recorded: boolean } {
   let late = 0;
   let kurang = 0;
   let recorded = true;
-  for (const week of CPMK2_WEEKS) {
-    const entry = data.a[week];
-    if (!entry || !entry.time || !entry.content) {
+  for (const { week, slot } of allCpmk2Slots()) {
+    const entry = getSlotEntry(data, week, slot);
+    if (!entry.time || !entry.content) {
       recorded = false;
       continue;
     }
@@ -349,13 +378,16 @@ export function validateCpmk2(data: Cpmk2Data) {
   );
   ensure(typeof data.d2Reviewed === "boolean", "Status pemeriksaan pelanggaran tidak valid.");
   for (const [week, entry] of Object.entries(data.a)) {
-    ensure(
-      (CPMK2_WEEKS as readonly string[]).includes(week) &&
-        entry &&
-        TIME_VALUES.includes(entry.time) &&
-        CONTENT_VALUES.includes(entry.content),
-      `Status pengumpulan minggu ${week} tidak valid.`,
-    );
+    ensure((CPMK2_WEEKS as readonly string[]).includes(week) && entry && typeof entry === "object", `Status pengumpulan minggu ${week} tidak valid.`);
+    const allowed = slotsForWeek(week);
+    for (const [slot, se] of Object.entries(entry as WeekEntry)) {
+      ensure((allowed as string[]).includes(slot), `Slot ${slot} minggu ${week} tidak berlaku.`);
+      const s = se as SlotEntry;
+      ensure(
+        s && TIME_VALUES.includes(s.time) && CONTENT_VALUES.includes(s.content),
+        `Status pengumpulan minggu ${week} (${slot}) tidak valid.`,
+      );
+    }
   }
   for (const [code, entry] of Object.entries(data.b)) {
     const aspect = CPMK2_ASPECTS.find((item) => item.code === code && code !== "D1");

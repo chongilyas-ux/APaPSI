@@ -26,9 +26,27 @@ function must<T>(result: { data: T; error: { message: string; code?: string } | 
   return result.data;
 }
 
+function normalizeA(a: any): Cpmk2Data["a"] {
+  const out: Cpmk2Data["a"] = {};
+  if (!a || typeof a !== "object") return out;
+  for (const [week, w] of Object.entries(a as Record<string, any>)) {
+    if (!w || typeof w !== "object") continue;
+    // format lama: {time,content} per minggu -> {lab: entry}
+    if ("time" in w && "content" in w && !("lab" in w) && !("rumah" in w)) {
+      out[week] = { lab: { time: w.time ?? "", content: w.content ?? "" } };
+    } else {
+      const we: any = {};
+      if (w.lab && typeof w.lab === "object") we.lab = { time: w.lab.time ?? "", content: w.lab.content ?? "" };
+      if (w.rumah && typeof w.rumah === "object") we.rumah = { time: w.rumah.time ?? "", content: w.rumah.content ?? "" };
+      out[week] = we;
+    }
+  }
+  return out;
+}
+
 function pick(data: any): Cpmk2Data {
   return {
-    a: data?.a ?? {},
+    a: normalizeA(data?.a),
     b: data?.b ?? {},
     d1: data?.d1 ?? {},
     d2: Array.isArray(data?.d2) ? data.d2 : [],
