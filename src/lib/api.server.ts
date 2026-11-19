@@ -14,6 +14,7 @@ import {
   type AssessmentData,
   type Configuration,
 } from "./domain";
+import { calculateCpmk2, emptyCpmk2Data, allCpmk2Slots, getSlotEntry, type Cpmk2Data } from "./cpmk2/domain";
 
 export class HttpError extends Error {
   constructor(
@@ -480,12 +481,67 @@ async function bootstrap(request: Request) {
 
 export type AiHandler = (ctx: Ctx, method: string, path: string, url: URL) => Promise<Response>;
 
+async function publicStudentGrade(url: URL): Promise<Response> {
+  const npm = (url.searchParams.get("npm") ?? "").trim();
+  if (!/^\d{10}$/.test(npm)) return json({ found: false, message: "NPM harus 10 digit angka." }, 400);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: student, error: sErr } = await supabaseAdmin
+    .from("students")
+    .select("id,npm,name,rombel_id,active")
+    .eq("npm", npm)
+    .eq("active", true)
+    .maybeSingle();
+  if (sErr || !student) return json({ found: false, message: "NPM tidak ditemukan." }, 404);
+
+  const [activeVer, a1, a2, versions] = await Promise.all([
+    supabaseAdmin.from("assessment_versions").select("id,config").eq("state", "active").maybeSingle(),
+    supabaseAdmin.from("assessments").select("data,state,version_id").eq("student_id", student.id).maybeSingle(),
+    supabaseAdmin.from("assessments_cpmk2").select("data,state").eq("student_id", student.id).maybeSingle(),
+    supabaseAdmin.from("assessment_versions").select("id,config"),
+  ]);
+  const versionMap = new Map((versions.data ?? []).map((v: any) => [v.id, v.config as Configuration]));
+  const activeConfig = (activeVer.data?.config as Configuration | undefined) ?? initialConfig;
+
+  // Tugas 1 (CPMK 1 / Tahap I)
+  const a1row = a1.data as any;
+  const c1Config = (a1row && versionMap.get(a1row.version_id)) ?? activeConfig;
+  const c1Data = (a1row?.data as AssessmentData | undefined) ?? emptyData();
+  const c1Result = calculate(c1Data, c1Config, a1row?.state === "verified");
+
+  // Tugas 2 (CPMK 2 / Tahap II)
+  const a2row = a2.data as any;
+  const c2Data = (a2row?.data as Cpmk2Data | undefined) ?? emptyCpmk2Data();
+  const c2Result = calculateCpmk2(c2Data);
+  const c2Slots = allCpmk2Slots().map(({ week, slot }) => {
+    const e = getSlotEntry(c2Data, week, slot);
+    return { week, slot, time: e.time || "", content: e.content || "" };
+  });
+
+  return json({
+    found: true,
+    student: { npm: student.npm, name: student.name, rombel_id: student.rombel_id },
+    tugas1: {
+      label: "Tugas 1 — Tahap I (CPMK 1)",
+      state: a1row?.state ?? "belum dinilai",
+      result: c1Result,
+    },
+    tugas2: {
+      label: "Tugas 2 — Tahap II / CPMK 2",
+      state: a2row?.state ?? "belum dinilai",
+      result: c2Result,
+      slots: c2Slots,
+    },
+    tugas3: { label: "Tugas 3", available: false, message: "Belum tersedia (rubrik belum ada)." },
+  });
+}
+
 export async function handleApi(request: Request, path: string, aiHandler?: AiHandler): Promise<Response> {
   try {
     const method = request.method.toUpperCase();
     const url = new URL(request.url);
     if (path === "/health") return json({ status: "ok" });
     if (path === "/auth/bootstrap" && method === "POST") return await bootstrap(request);
+    if (path === "/public/student-grade" && method === "GET") return await publicStudentGrade(url);
     const ctx = await authenticate(request);
     const body = async () => {
       const raw = await request.text();

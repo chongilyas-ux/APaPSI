@@ -15,6 +15,7 @@ import {
   ClipboardCheck,
   Clock3,
   Database,
+  ExternalLink,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -184,10 +185,18 @@ export default function Shell() {
               asisten yang berwenang.
             </p>
           </div>
+          <a
+            href="/cek-nilai"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-xs text-[#a9bbc8] transition hover:bg-white/5 hover:text-white"
+          >
+            <ExternalLink size={17} />Cek Nilai (Praktikan)
+          </a>
           <button
             disabled={loggingOut}
             onClick={logout}
-            className="mt-4 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-xs text-[#a9bbc8] transition hover:bg-white/5 hover:text-white"
+            className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-xs text-[#a9bbc8] transition hover:bg-white/5 hover:text-white"
           >
             {loggingOut ? <Spinner /> : <LogOut size={17} />}Keluar dari akun
           </button>
